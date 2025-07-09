@@ -16,9 +16,18 @@ class _TopUpScreenState extends State<TopUpScreen> {
   final TextEditingController userIdController = TextEditingController();
   final TextEditingController serverIdController = TextEditingController();
   final TextEditingController whatsappController = TextEditingController();
-  int selectedDiamond = 0;
+  int selectedItem = 0;
   int purchaseAmount = 1;
   int selectedPayment = 0;
+
+  final List<Map<String, dynamic>> ucOptions = [
+    {'amount': 60, 'price': 15200},
+    {'amount': 120, 'price': 30400},
+    {'amount': 180, 'price': 45600},
+    {'amount': 660, 'price': 150900},
+    {'amount': 720, 'price': 166100},
+    {'amount': 780, 'price': 181300},
+  ];
 
   final List<Map<String, dynamic>> diamondOptions = [
     {'amount': 86, 'price': 20000},
@@ -39,49 +48,58 @@ class _TopUpScreenState extends State<TopUpScreen> {
     final userId = userIdController.text.trim();
     final serverId = serverIdController.text.trim();
     final whatsapp = whatsappController.text.trim();
-    final diamond = diamondOptions[selectedDiamond];
+    final isPubg = widget.gameTitle.toLowerCase() == 'pubg mobile';
+    final isFreeFire = widget.gameTitle.toLowerCase() == 'free fire';
+    final isGenshinImpact = widget.gameTitle.toLowerCase() == 'genshin impact';
+    final isSingleIdGame = isPubg || isFreeFire || isGenshinImpact;
+    final options = isPubg ? ucOptions : diamondOptions;
+    final item = options[selectedItem];
     final payment = paymentMethods[selectedPayment]['name'];
-    if (userId.isEmpty || serverId.isEmpty || whatsapp.isEmpty) {
+
+    if (userId.isEmpty ||
+        whatsapp.isEmpty ||
+        (!isSingleIdGame && serverId.isEmpty)) {
       showDialog(
         context: context,
-        builder:
-            (_) => AlertDialog(
-              title: const Text('Error'),
-              content: const Text('Semua data harus diisi!'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('OK'),
-                ),
-              ],
+        builder: (_) => AlertDialog(
+          title: const Text('Error'),
+          content: const Text('Semua data harus diisi!'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
             ),
+          ],
+        ),
       );
       return;
     }
+
     try {
       final response =
           await Supabase.instance.client.from('transactions').insert({
-            'game': widget.gameTitle,
-            'item': '${diamond['amount']} Diamonds',
-            'amount': diamond['price'] * purchaseAmount,
-            'status': 'pending',
-            'user_id': userId,
-            'server_id': serverId,
-            'payment': payment,
-            'whatsapp': whatsapp,
-          }).select();
+        'game': widget.gameTitle,
+        'item': '${item['amount']} ${isPubg ? 'UC' : 'Diamonds'}',
+        'amount': item['price'] * purchaseAmount,
+        'status': 'pending',
+        'user_id': userId,
+        if (!isSingleIdGame) 'server_id': serverId,
+        'payment': payment,
+        'whatsapp': whatsapp,
+      }).select();
+
       print('Supabase insert response: $response');
       final order = response.first;
+
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
-          builder:
-              (_) => PaymentMethodScreen(
-                paymentMethod: payment,
-                amount: diamond['price'] * purchaseAmount,
-                orderId: order['id'].toString(),
-                game: widget.gameTitle,
-                item: '${diamond['amount']} Diamonds',
-              ),
+          builder: (_) => PaymentMethodScreen(
+            paymentMethod: payment,
+            amount: item['price'] * purchaseAmount,
+            orderId: order['id'].toString(),
+            game: widget.gameTitle,
+            item: '${item['amount']} ${isPubg ? 'UC' : 'Diamonds'}',
+          ),
         ),
       );
     } catch (e) {
@@ -105,6 +123,13 @@ class _TopUpScreenState extends State<TopUpScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isPubg = widget.gameTitle.toLowerCase() == 'pubg mobile';
+    final isFreeFire = widget.gameTitle.toLowerCase() == 'free fire';
+    final isGenshinImpact = widget.gameTitle.toLowerCase() == 'genshin impact';
+    final isSingleIdGame = isPubg || isFreeFire || isGenshinImpact;
+    final options = isPubg ? ucOptions : diamondOptions;
+    final itemLabel = isPubg ? 'UC' : 'Diamonds';
+
     return Scaffold(
       backgroundColor: const Color(0xFF5B5FE9),
       body: SafeArea(
@@ -147,9 +172,9 @@ class _TopUpScreenState extends State<TopUpScreen> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        const Text(
-                          'Top Up Diamonds',
-                          style: TextStyle(color: Colors.white70, fontSize: 16),
+                        Text(
+                          'Top Up $itemLabel',
+                          style: const TextStyle(color: Colors.white70, fontSize: 16),
                         ),
                       ],
                     ),
@@ -168,66 +193,90 @@ class _TopUpScreenState extends State<TopUpScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Masukkan Data Akun',
-                      style: TextStyle(
+                    Text(
+                      isSingleIdGame ? 'Masukkan Data' : 'Masukkan Data Akun',
+                      style: const TextStyle(
                         color: Color(0xFF5B5FE9),
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                       ),
                     ),
                     const SizedBox(height: 4),
-                    const Text(
-                      'Pastikan data yang dimasukkan benar',
-                      style: TextStyle(color: Colors.black54, fontSize: 12),
+                    Text(
+                      isPubg
+                          ? 'Untuk menemukan ID Karakter Anda, masuk ke akun Anda di aplikasi. Klik avatar yang terletak di pojok kiri atas layar utama. Anda akan menemukan ID Karakter Anda tepat di bawah profil Anda.'
+                          : isFreeFire || isGenshinImpact
+                              ? 'Untuk menemukan ID Pemain Anda, klik gambar avatar Anda di pojok kiri atas layar Anda. ID Pemain Anda akan ditampilkan di bawah nama pengguna Anda.'
+                              : 'Pastikan data yang dimasukkan benar',
+                      style: const TextStyle(color: Colors.black54, fontSize: 12),
                     ),
                     const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: userIdController,
-                            decoration: InputDecoration(
-                              hintText: 'User id',
-                              filled: true,
-                              fillColor: const Color(0xFFF2F2F2),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide.none,
-                              ),
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 10,
+                    if (isSingleIdGame)
+                      TextField(
+                        controller: userIdController,
+                        decoration: InputDecoration(
+                          hintText: isFreeFire || isGenshinImpact
+                              ? 'Masukkan Player ID'
+                              : 'Masukkan User ID',
+                          filled: true,
+                          fillColor: const Color(0xFFF2F2F2),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                        ),
+                      )
+                    else
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: userIdController,
+                              decoration: InputDecoration(
+                                hintText: 'User id',
+                                filled: true,
+                                fillColor: const Color(0xFFF2F2F2),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide.none,
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 10,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: TextField(
-                            controller: serverIdController,
-                            decoration: InputDecoration(
-                              hintText: 'server id',
-                              filled: true,
-                              fillColor: const Color(0xFFF2F2F2),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide.none,
-                              ),
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 10,
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: TextField(
+                              controller: serverIdController,
+                              decoration: InputDecoration(
+                                hintText: 'server id',
+                                filled: true,
+                                fillColor: const Color(0xFFF2F2F2),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide.none,
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 10,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      ],
-                    ),
+                        ],
+                      ),
                   ],
                 ),
               ),
               const SizedBox(height: 16),
-              // Pilih Nominal Diamond
+              // Pilih Nominal
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 16),
                 padding: const EdgeInsets.all(16),
@@ -238,9 +287,9 @@ class _TopUpScreenState extends State<TopUpScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Pilih Nominal Diamond',
-                      style: TextStyle(
+                    Text(
+                      'Pilih Nominal $itemLabel',
+                      style: const TextStyle(
                         color: Color(0xFF5B5FE9),
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
@@ -252,31 +301,29 @@ class _TopUpScreenState extends State<TopUpScreen> {
                       physics: const NeverScrollableScrollPhysics(),
                       gridDelegate:
                           const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 3,
-                            mainAxisSpacing: 12,
-                            crossAxisSpacing: 12,
-                            childAspectRatio: 1.5,
-                          ),
-                      itemCount: diamondOptions.length,
+                        crossAxisCount: 3,
+                        mainAxisSpacing: 12,
+                        crossAxisSpacing: 12,
+                        childAspectRatio: 1.5,
+                      ),
+                      itemCount: options.length,
                       itemBuilder: (context, i) {
-                        final option = diamondOptions[i];
-                        final selected = selectedDiamond == i;
+                        final option = options[i];
+                        final selected = selectedItem == i;
                         return GestureDetector(
-                          onTap: () => setState(() => selectedDiamond = i),
+                          onTap: () => setState(() => selectedItem = i),
                           child: Container(
                             decoration: BoxDecoration(
-                              color:
-                                  selected
-                                      ? const Color(0xFF5B5FE9)
-                                      : const Color(0xFFF2F2F2),
+                              color: selected
+                                  ? const Color(0xFF5B5FE9)
+                                  : const Color(0xFFF2F2F2),
                               borderRadius: BorderRadius.circular(12),
-                              border:
-                                  selected
-                                      ? Border.all(
-                                        color: Colors.deepPurple,
-                                        width: 2,
-                                      )
-                                      : null,
+                              border: selected
+                                  ? Border.all(
+                                      color: Colors.deepPurple,
+                                      width: 2,
+                                    )
+                                  : null,
                             ),
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
@@ -284,8 +331,8 @@ class _TopUpScreenState extends State<TopUpScreen> {
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    const Icon(
-                                      Icons.diamond,
+                                    Icon(
+                                      isPubg ? Icons.monetization_on : Icons.diamond,
                                       color: Colors.amber,
                                       size: 18,
                                     ),
@@ -293,10 +340,9 @@ class _TopUpScreenState extends State<TopUpScreen> {
                                     Text(
                                       option['amount'].toString(),
                                       style: TextStyle(
-                                        color:
-                                            selected
-                                                ? Colors.white
-                                                : Colors.black87,
+                                        color: selected
+                                            ? Colors.white
+                                            : Colors.black87,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
@@ -306,10 +352,9 @@ class _TopUpScreenState extends State<TopUpScreen> {
                                 Text(
                                   'Rp. ${option['price']}',
                                   style: TextStyle(
-                                    color:
-                                        selected
-                                            ? Colors.white70
-                                            : Colors.black54,
+                                    color: selected
+                                        ? Colors.white70
+                                        : Colors.black54,
                                     fontSize: 12,
                                   ),
                                 ),

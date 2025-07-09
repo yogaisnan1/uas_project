@@ -80,10 +80,6 @@ class HomeTab extends StatelessWidget {
                   mainAxisSpacing: 20,
                   children: [
                     _GameCard(
-                      image: 'assets/clash_of_clans.png',
-                      title: 'Clash of Clans',
-                    ),
-                    _GameCard(
                       image: 'assets/mobile_legends.png',
                       title: 'Mobile Legends',
                     ),
@@ -98,10 +94,6 @@ class HomeTab extends StatelessWidget {
                     _GameCard(
                       image: 'assets/genshin_impact.png',
                       title: 'Genshin Impact',
-                    ),
-                    _GameCard(
-                      image: 'assets/arena_breakout.png',
-                      title: 'Arena Breakout',
                     ),
                   ],
                 ),
