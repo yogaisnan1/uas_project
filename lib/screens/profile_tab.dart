@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter/foundation.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class ProfileTab extends StatefulWidget {
   const ProfileTab({super.key});
@@ -32,14 +34,73 @@ class _ProfileTabState extends State<ProfileTab> {
     });
   }
 
-  Future<void> _pickImage() async {
-    final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.gallery);
-    if (picked != null) {
-      setState(() {
-        _profileImage = File(picked.path);
-      });
+  Future<void> _pickImage(ImageSource source) async {
+    PermissionStatus status;
+    if (source == ImageSource.camera) {
+      status = await Permission.camera.request();
+    } else {
+      if (Platform.isIOS) {
+        status = await Permission.photos.request();
+      } else {
+        status = await Permission.storage.request();
+      }
     }
+
+    if (status.isGranted) {
+      final picker = ImagePicker();
+      final picked = await picker.pickImage(source: source);
+      if (picked != null) {
+        final imageFile = File(picked.path);
+        if (imageFile.existsSync()) {
+          setState(() {
+            _profileImage = imageFile;
+          });
+        } else {
+          if (kDebugMode) {
+            print('Error: Picked file does not exist at ${picked.path}');
+          }
+        }
+      } else {
+        if (kDebugMode) {
+          print('Error: No image picked');
+        }
+      }
+    } else if (status.isPermanentlyDenied) {
+      openAppSettings();
+    } else {
+      if (kDebugMode) {
+        print('Error: Permission not granted');
+      }
+    }
+  }
+
+  void _showImageSourceActionSheet() {
+    showModalBottomSheet(
+      context: context,
+      builder:
+          (context) => SafeArea(
+            child: Wrap(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.camera_alt),
+                  title: const Text('Take Photo'),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    _pickImage(ImageSource.camera);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.photo_library),
+                  title: const Text('Choose from Gallery'),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    _pickImage(ImageSource.gallery);
+                  },
+                ),
+              ],
+            ),
+          ),
+    );
   }
 
   Future<void> _logout() async {
@@ -69,25 +130,32 @@ class _ProfileTabState extends State<ProfileTab> {
               child: Column(
                 children: [
                   GestureDetector(
-                    onTap: _pickImage,
-                    child: CircleAvatar(
-                      radius: 40,
-                      backgroundColor: Colors.white,
-                      backgroundImage:
-                          _profileImage != null
-                              ? FileImage(_profileImage!)
-                              : const AssetImage(
-                                    'assets/profile_placeholder.png',
-                                  )
-                                  as ImageProvider,
-                      child:
-                          _profileImage == null
-                              ? const Icon(
-                                Icons.person,
-                                size: 40,
-                                color: Color(0xFF5B5FE9),
-                              )
-                              : null,
+                    onTap: _showImageSourceActionSheet,
+                    child: Stack(
+                      children: [
+                        CircleAvatar(
+                          radius: 40,
+                          backgroundColor: Colors.white,
+                          backgroundImage:
+                              _profileImage != null
+                                  ? FileImage(_profileImage!)
+                                  : const AssetImage(
+                                        'assets/profile_placeholder.png',
+                                      )
+                                      as ImageProvider,
+                        ),
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: Container(
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white,
+                            ),
+                            child: const Icon(Icons.edit, color: Colors.grey),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 8),

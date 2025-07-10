@@ -42,7 +42,9 @@ class _TransactionTabState extends State<TransactionTab> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text("Confirm Delete"),
-          content: const Text("Are you sure you want to delete this transaction?"),
+          content: const Text(
+            "Are you sure you want to delete this transaction?",
+          ),
           actions: <Widget>[
             TextButton(
               child: const Text("Cancel"),
@@ -74,7 +76,6 @@ class _TransactionTabState extends State<TransactionTab> {
       }
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -129,7 +130,9 @@ class _TransactionTabState extends State<TransactionTab> {
                       } else if (snapshot.hasError) {
                         return Center(child: Text('Error: ${snapshot.error}'));
                       } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                        return const Center(child: Text('No transactions found.'));
+                        return const Center(
+                          child: Text('No transactions found.'),
+                        );
                       }
                       final transactions = snapshot.data!;
                       return ListView.separated(

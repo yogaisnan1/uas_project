@@ -61,16 +61,17 @@ class _TopUpScreenState extends State<TopUpScreen> {
         (!isSingleIdGame && serverId.isEmpty)) {
       showDialog(
         context: context,
-        builder: (_) => AlertDialog(
-          title: const Text('Error'),
-          content: const Text('Semua data harus diisi!'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('OK'),
+        builder:
+            (_) => AlertDialog(
+              title: const Text('Error'),
+              content: const Text('Semua data harus diisi!'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('OK'),
+                ),
+              ],
             ),
-          ],
-        ),
       );
       return;
     }
@@ -78,28 +79,29 @@ class _TopUpScreenState extends State<TopUpScreen> {
     try {
       final response =
           await Supabase.instance.client.from('transactions').insert({
-        'game': widget.gameTitle,
-        'item': '${item['amount']} ${isPubg ? 'UC' : 'Diamonds'}',
-        'amount': item['price'] * purchaseAmount,
-        'status': 'pending',
-        'user_id': userId,
-        if (!isSingleIdGame) 'server_id': serverId,
-        'payment': payment,
-        'whatsapp': whatsapp,
-      }).select();
+            'game': widget.gameTitle,
+            'item': '${item['amount']} ${isPubg ? 'UC' : 'Diamonds'}',
+            'amount': item['price'] * purchaseAmount,
+            'status': 'pending',
+            'user_id': userId,
+            if (!isSingleIdGame) 'server_id': serverId,
+            'payment': payment,
+            'whatsapp': whatsapp,
+          }).select();
 
       print('Supabase insert response: $response');
       final order = response.first;
 
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
-          builder: (_) => PaymentMethodScreen(
-            paymentMethod: payment,
-            amount: item['price'] * purchaseAmount,
-            orderId: order['id'].toString(),
-            game: widget.gameTitle,
-            item: '${item['amount']} ${isPubg ? 'UC' : 'Diamonds'}',
-          ),
+          builder:
+              (_) => PaymentMethodScreen(
+                paymentMethod: payment,
+                amount: item['price'] * purchaseAmount,
+                orderId: order['id'].toString(),
+                game: widget.gameTitle,
+                item: '${item['amount']} ${isPubg ? 'UC' : 'Diamonds'}',
+              ),
         ),
       );
     } catch (e) {
@@ -174,7 +176,10 @@ class _TopUpScreenState extends State<TopUpScreen> {
                         ),
                         Text(
                           'Top Up $itemLabel',
-                          style: const TextStyle(color: Colors.white70, fontSize: 16),
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 16,
+                          ),
                         ),
                       ],
                     ),
@@ -206,18 +211,22 @@ class _TopUpScreenState extends State<TopUpScreen> {
                       isPubg
                           ? 'Untuk menemukan ID Karakter Anda, masuk ke akun Anda di aplikasi. Klik avatar yang terletak di pojok kiri atas layar utama. Anda akan menemukan ID Karakter Anda tepat di bawah profil Anda.'
                           : isFreeFire || isGenshinImpact
-                              ? 'Untuk menemukan ID Pemain Anda, klik gambar avatar Anda di pojok kiri atas layar Anda. ID Pemain Anda akan ditampilkan di bawah nama pengguna Anda.'
-                              : 'Pastikan data yang dimasukkan benar',
-                      style: const TextStyle(color: Colors.black54, fontSize: 12),
+                          ? 'Untuk menemukan ID Pemain Anda, klik gambar avatar Anda di pojok kiri atas layar Anda. ID Pemain Anda akan ditampilkan di bawah nama pengguna Anda.'
+                          : 'Pastikan data yang dimasukkan benar',
+                      style: const TextStyle(
+                        color: Colors.black54,
+                        fontSize: 12,
+                      ),
                     ),
                     const SizedBox(height: 12),
                     if (isSingleIdGame)
                       TextField(
                         controller: userIdController,
                         decoration: InputDecoration(
-                          hintText: isFreeFire || isGenshinImpact
-                              ? 'Masukkan Player ID'
-                              : 'Masukkan User ID',
+                          hintText:
+                              isFreeFire || isGenshinImpact
+                                  ? 'Masukkan Player ID'
+                                  : 'Masukkan User ID',
                           filled: true,
                           fillColor: const Color(0xFFF2F2F2),
                           border: OutlineInputBorder(
@@ -301,11 +310,11 @@ class _TopUpScreenState extends State<TopUpScreen> {
                       physics: const NeverScrollableScrollPhysics(),
                       gridDelegate:
                           const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 3,
-                        mainAxisSpacing: 12,
-                        crossAxisSpacing: 12,
-                        childAspectRatio: 1.5,
-                      ),
+                            crossAxisCount: 3,
+                            mainAxisSpacing: 12,
+                            crossAxisSpacing: 12,
+                            childAspectRatio: 1.5,
+                          ),
                       itemCount: options.length,
                       itemBuilder: (context, i) {
                         final option = options[i];
@@ -314,16 +323,18 @@ class _TopUpScreenState extends State<TopUpScreen> {
                           onTap: () => setState(() => selectedItem = i),
                           child: Container(
                             decoration: BoxDecoration(
-                              color: selected
-                                  ? const Color(0xFF5B5FE9)
-                                  : const Color(0xFFF2F2F2),
+                              color:
+                                  selected
+                                      ? const Color(0xFF5B5FE9)
+                                      : const Color(0xFFF2F2F2),
                               borderRadius: BorderRadius.circular(12),
-                              border: selected
-                                  ? Border.all(
-                                      color: Colors.deepPurple,
-                                      width: 2,
-                                    )
-                                  : null,
+                              border:
+                                  selected
+                                      ? Border.all(
+                                        color: Colors.deepPurple,
+                                        width: 2,
+                                      )
+                                      : null,
                             ),
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
@@ -332,7 +343,9 @@ class _TopUpScreenState extends State<TopUpScreen> {
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     Icon(
-                                      isPubg ? Icons.monetization_on : Icons.diamond,
+                                      isPubg
+                                          ? Icons.monetization_on
+                                          : Icons.diamond,
                                       color: Colors.amber,
                                       size: 18,
                                     ),
@@ -340,9 +353,10 @@ class _TopUpScreenState extends State<TopUpScreen> {
                                     Text(
                                       option['amount'].toString(),
                                       style: TextStyle(
-                                        color: selected
-                                            ? Colors.white
-                                            : Colors.black87,
+                                        color:
+                                            selected
+                                                ? Colors.white
+                                                : Colors.black87,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
@@ -352,9 +366,10 @@ class _TopUpScreenState extends State<TopUpScreen> {
                                 Text(
                                   'Rp. ${option['price']}',
                                   style: TextStyle(
-                                    color: selected
-                                        ? Colors.white70
-                                        : Colors.black54,
+                                    color:
+                                        selected
+                                            ? Colors.white70
+                                            : Colors.black54,
                                     fontSize: 12,
                                   ),
                                 ),
