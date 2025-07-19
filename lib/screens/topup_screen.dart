@@ -59,6 +59,7 @@ class _TopUpScreenState extends State<TopUpScreen> {
     if (userId.isEmpty ||
         whatsapp.isEmpty ||
         (!isSingleIdGame && serverId.isEmpty)) {
+      if (!mounted) return;
       showDialog(
         context: context,
         builder:
@@ -92,6 +93,7 @@ class _TopUpScreenState extends State<TopUpScreen> {
       print('Supabase insert response: $response');
       final order = response.first;
 
+      if (!mounted) return;
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder:
@@ -106,6 +108,7 @@ class _TopUpScreenState extends State<TopUpScreen> {
       );
     } catch (e) {
       print('Order error: $e');
+      if (!mounted) return;
       showDialog(
         context: context,
         builder:
@@ -393,12 +396,14 @@ class _TopUpScreenState extends State<TopUpScreen> {
                 ),
                 child: Row(
                   children: [
-                    const Text(
-                      'Masukkan Jumlah Pembelian',
-                      style: TextStyle(
-                        color: Color(0xFF5B5FE9),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
+                    const Expanded(
+                      child: Text(
+                        'Masukkan Jumlah Pembelian',
+                        style: TextStyle(
+                          color: Color(0xFF5B5FE9),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
                       ),
                     ),
                     const Spacer(),

@@ -14,6 +14,7 @@ class ProfileTab extends StatefulWidget {
 
 class _ProfileTabState extends State<ProfileTab> {
   File? _profileImage;
+  String? _profileImageUrl;
   String? _username;
   String? _email;
 
@@ -31,6 +32,10 @@ class _ProfileTabState extends State<ProfileTab> {
           user?.email?.split('@').first ??
           'Unknown';
       _email = user?.email ?? 'Unknown';
+      // Load profile image URL from user metadata
+      if (user?.userMetadata?['avatar_url'] != null) {
+        _profileImageUrl = user!.userMetadata!['avatar_url'] as String;
+      }
     });
   }
 
@@ -50,15 +55,47 @@ class _ProfileTabState extends State<ProfileTab> {
       final picker = ImagePicker();
       final picked = await picker.pickImage(source: source);
       if (picked != null) {
-        final imageFile = File(picked.path);
-        if (imageFile.existsSync()) {
+        try {
+          // Upload to Supabase storage
+          final user = Supabase.instance.client.auth.currentUser;
+          if (user == null) return;
+          
+          final bytes = await picked.readAsBytes();
+          final fileExt = picked.path.split('.').last;
+          final fileName = '${user.id}_profile.${fileExt}';
+          final filePath = 'profile/$fileName';
+
+          await Supabase.instance.client.storage
+              .from('avatars')
+              .uploadBinary(filePath, bytes,
+                  fileOptions: FileOptions(upsert: true));
+
+          // Get public URL
+          final imageUrl = Supabase.instance.client.storage
+              .from('avatars')
+              .getPublicUrl(filePath);
+
+          // Update user metadata
+          await Supabase.instance.client.auth.updateUser(
+            UserAttributes(
+              data: {'avatar_url': imageUrl},
+            ),
+          );
+
           setState(() {
-            _profileImage = imageFile;
+            _profileImage = File(picked.path);
+            _profileImageUrl = imageUrl;
           });
-        } else {
+          
+        } catch (e) {
           if (kDebugMode) {
-            print('Error: Picked file does not exist at ${picked.path}');
+            print('Upload failed: $e');
           }
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Failed to upload profile picture'),
+            ),
+          );
         }
       } else {
         if (kDebugMode) {
@@ -71,6 +108,11 @@ class _ProfileTabState extends State<ProfileTab> {
       if (kDebugMode) {
         print('Error: Permission not granted');
       }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Permission not granted. Please enable access in settings.'),
+        ),
+      );
     }
   }
 
@@ -136,13 +178,13 @@ class _ProfileTabState extends State<ProfileTab> {
                         CircleAvatar(
                           radius: 40,
                           backgroundColor: Colors.white,
-                          backgroundImage:
-                              _profileImage != null
+                          backgroundImage: _profileImageUrl != null
+                              ? NetworkImage(_profileImageUrl!)
+                              : (_profileImage != null
                                   ? FileImage(_profileImage!)
                                   : const AssetImage(
-                                        'assets/profile_placeholder.png',
-                                      )
-                                      as ImageProvider,
+                                      'assets/profile_placeholder.png',
+                                    ) as ImageProvider),
                         ),
                         Positioned(
                           bottom: 0,
