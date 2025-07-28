@@ -1,4 +1,4 @@
-package com.example.gamecharge
+package com.gamecharge.gamecharge
 
 import io.flutter.embedding.android.FlutterActivity
 
